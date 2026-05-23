@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, Globe, Shield, Sliders, Plus, X, Info, Sun, Moon } from 'lucide-react';
+import { ToggleLeft, ToggleRight, Globe, Shield, Sliders, Plus, X, Info, Sun, Moon, Link } from 'lucide-react';
 import './index.less';
 
 interface SettingsPanelProps {
@@ -12,6 +12,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   const [autoRead, setAutoRead] = useState(true);
   const [filterKeys, setFilterKeys] = useState<string[]>(['authorization', 'authToken']);
   const [newFilterKey, setNewFilterKey] = useState('');
+  const [autoWriteFiltered, setAutoWriteFiltered] = useState(false);
+  const [autoWriteToPage, setAutoWriteToPage] = useState(false);
+  const [autoWriteUrl, setAutoWriteUrl] = useState('');
 
   const handleToggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -23,12 +26,21 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   // 初始化加载设置
   useEffect(() => {
     if (isExtension) {
-      chrome.storage.local.get(['sync_auto_read', 'sync_filter_keys'], (result) => {
+      chrome.storage.local.get(['sync_auto_read', 'sync_filter_keys', 'sync_auto_write_filtered', 'sync_auto_write_to_page', 'sync_auto_write_url'], (result) => {
         if (result.sync_auto_read !== undefined) {
           setAutoRead(result.sync_auto_read);
         }
         if (result.sync_filter_keys) {
           setFilterKeys(result.sync_filter_keys);
+        }
+        if (result.sync_auto_write_filtered !== undefined) {
+          setAutoWriteFiltered(result.sync_auto_write_filtered);
+        }
+        if (result.sync_auto_write_to_page !== undefined) {
+          setAutoWriteToPage(result.sync_auto_write_to_page);
+        }
+        if (result.sync_auto_write_url !== undefined) {
+          setAutoWriteUrl(result.sync_auto_write_url);
         }
       });
     } else {
@@ -41,6 +53,18 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
         try {
           setFilterKeys(JSON.parse(savedFilterKeys));
         } catch {}
+      }
+      const savedAutoWriteFiltered = localStorage.getItem('sync_auto_write_filtered');
+      if (savedAutoWriteFiltered !== null) {
+        setAutoWriteFiltered(savedAutoWriteFiltered === 'true');
+      }
+      const savedAutoWrite = localStorage.getItem('sync_auto_write_to_page');
+      if (savedAutoWrite !== null) {
+        setAutoWriteToPage(savedAutoWrite === 'true');
+      }
+      const savedAutoWriteUrl = localStorage.getItem('sync_auto_write_url');
+      if (savedAutoWriteUrl !== null) {
+        setAutoWriteUrl(savedAutoWriteUrl);
       }
     }
   }, []);
@@ -55,6 +79,47 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
       localStorage.setItem('sync_auto_read', String(nextVal));
     }
     showToast(nextVal ? '已开启默认自动读取' : '已配置为默认不读取，需手动刷新', 'success');
+  };
+
+  // 保存是否开启筛选数据默认写入
+  const handleToggleAutoWriteFiltered = () => {
+    if (!autoRead) {
+      showToast('需先开启“默认自动读取”，才能启用自动写入', 'warning');
+      return;
+    }
+    const nextVal = !autoWriteFiltered;
+    setAutoWriteFiltered(nextVal);
+    if (isExtension) {
+      chrome.storage.local.set({ sync_auto_write_filtered: nextVal });
+    } else {
+      localStorage.setItem('sync_auto_write_filtered', String(nextVal));
+    }
+    showToast(nextVal ? '已开启筛选字段默认写入缓存箱' : '已关闭默认写入缓存箱', 'success');
+  };
+  // 保存是否开启加载时自动写入
+  const handleToggleAutoWriteToPage = () => {
+    const nextVal = !autoWriteToPage;
+    setAutoWriteToPage(nextVal);
+    if (isExtension) {
+      chrome.storage.local.set({ sync_auto_write_to_page: nextVal });
+    } else {
+      localStorage.setItem('sync_auto_write_to_page', String(nextVal));
+    }
+    if (nextVal) {
+      showToast('已开启自动写入，请确保填写匹配网址！', 'success');
+    } else {
+      showToast('已关闭页面自动写入', 'info');
+    }
+  };
+
+  // 保存匹配网址
+  const handleAutoWriteUrlChange = (val: string) => {
+    setAutoWriteUrl(val);
+    if (isExtension) {
+      chrome.storage.local.set({ sync_auto_write_url: val });
+    } else {
+      localStorage.setItem('sync_auto_write_url', val);
+    }
   };
 
   // 添加筛选键
@@ -90,7 +155,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   };
 
   return (
-    <div className="panel-container settings-panel">
+    <div className="settings-panel">
       {/* 模块：外观主题设置 */}
       <div className="settings-section">
         <div className="section-title">
@@ -120,6 +185,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
           <span>读取首选项</span>
         </div>
         
+        {/* 卡片一：是否自动读取 */}
         <div className="settings-card switch-wrapper" onClick={handleToggleAutoRead}>
           <div className="setting-info">
             <span className="setting-label">默认加载时读取</span>
@@ -133,6 +199,79 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
             )}
           </button>
         </div>
+
+        {/* 卡片二：是否开启过滤数据默认写入 (与卡片一联动) */}
+        <div 
+          className={`settings-card switch-wrapper ${!autoRead ? 'disabled' : ''}`}
+          onClick={handleToggleAutoWriteFiltered}
+          style={!autoRead ? { opacity: 0.5, cursor: 'not-allowed', marginTop: '12px' } : { marginTop: '12px' }}
+        >
+          <div className="setting-info">
+            <span className="setting-label">开启筛选数据默认写入</span>
+            <span className="setting-desc">加载时自动将匹配过滤的字段写入缓存箱</span>
+          </div>
+          <button type="button" className="btn-toggle-switch" disabled={!autoRead}>
+            {autoRead && autoWriteFiltered ? (
+              <ToggleRight size={28} className="switch-icon active" />
+            ) : (
+              <ToggleLeft size={28} className="switch-icon" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* 模块：写入首选项设置 */}
+      <div className="settings-section">
+        <div className="section-title">
+          <Globe size={14} className="icon-title" style={{ transform: 'rotate(180deg)' }} />
+          <span>写入首选项</span>
+        </div>
+        
+        {/* 卡片一：是否自动写入 */}
+        <div className="settings-card switch-wrapper" onClick={handleToggleAutoWriteToPage}>
+          <div className="setting-info">
+            <span className="setting-label">匹配网址自动写入</span>
+            <span className="setting-desc">打开插件时，若匹配指定网址则自动将暂存数据写入网页</span>
+          </div>
+          <button type="button" className="btn-toggle-switch">
+            {autoWriteToPage ? (
+              <ToggleRight size={28} className="switch-icon active" />
+            ) : (
+              <ToggleLeft size={28} className="switch-icon" />
+            )}
+          </button>
+        </div>
+
+        {/* 必填网址输入框 */}
+        {autoWriteToPage && (
+          <div className="settings-card url-config-card" style={{ marginTop: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              <Link size={12} style={{ color: 'var(--color-primary)' }} />
+              <span>匹配网址/域名 <span style={{ color: 'var(--color-danger)' }}>*必填</span></span>
+            </div>
+            <input
+              type="text"
+              className="input-new-tag"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+              placeholder="例如: localhost 或 dev.example.com"
+              value={autoWriteUrl}
+              onChange={(e) => handleAutoWriteUrlChange(e.target.value)}
+            />
+            
+            <div className="config-tip" style={{ padding: '6px 8px', marginTop: '2px', border: '1px solid rgba(59, 130, 246, 0.1)', background: 'rgba(59, 130, 246, 0.03)' }}>
+              <Info size={12} className="info-icon" style={{ marginTop: '1.5px', color: '#60a5fa', flexShrink: 0 }} />
+              <span style={{ fontSize: '10.5px', lineHeight: 1.3, color: 'var(--text-secondary)' }}>
+                💡 <strong>智能模糊匹配：</strong>只需填写网址/域名的一部分（例如 <code>localhost</code> 或 <code>dev</code>）。当前网址包含此词即可触发自动写入，相较正则更易用安全，相较精准匹配更灵活！
+              </span>
+            </div>
+
+            {!autoWriteUrl.trim() && (
+              <span style={{ fontSize: '11px', color: 'var(--color-danger)', fontWeight: '500', marginTop: '4px' }}>
+                ⚠️ 网址不能为空，否则自动写入将不会生效！
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 模块二：字段筛选规则 */}

@@ -3,7 +3,7 @@ import { Search, RefreshCw, Box, Check, Copy, ChevronDown, ChevronUp, AlertCircl
 import './index.less';
 
 interface ReadPanelProps {
-  onAddToBox: (items: Record<string, string>) => void;
+  onAddToBox: (items: Record<string, string>, isAutoSync?: boolean) => void;
   showToast: (msg: string, type: 'success' | 'error' | 'warning' | 'info') => void;
   onNavigateToSettings: () => void;
 }
@@ -22,7 +22,7 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
   const isExtension = typeof chrome !== 'undefined' && chrome.tabs && chrome.scripting;
 
   // 读取 localStorage
-  const readData = async (readAll: boolean = false, customFilters?: string[]) => {
+  const readData = async (readAll: boolean = false, customFilters?: string[], autoWriteOnSuccess: boolean = false) => {
     setLoading(true);
     setSelectedKeys(new Set());
     setExpandedKeys(new Set());
@@ -63,6 +63,11 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
         setCurrentDomain('localhost:3000 (预览模式)');
         setLoading(false);
         showToast(readAll ? '已读取全部数据 (模拟数据)' : '已按筛选字段读取 (模拟数据)', 'success');
+        
+        // 自动同步至缓存箱
+        if (autoWriteOnSuccess && Object.keys(filteredData).length > 0) {
+          onAddToBox(filteredData, true);
+        }
       }, 600);
       return;
     }
@@ -123,6 +128,11 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
       setLocalStorageData(data);
       const count = Object.keys(data).length;
       showToast(readAll ? `成功读取全部 ${count} 条 localStorage 数据` : `已读取匹配筛选的 ${count} 条数据`, 'success');
+      
+      // 自动同步至缓存箱
+      if (autoWriteOnSuccess && count > 0) {
+        onAddToBox(data, true);
+      }
     } catch (err) {
       console.error(err);
       showToast('读取失败，请确认页面是否已加载且有权限', 'error');
@@ -136,14 +146,18 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
     const init = async () => {
       let keys = ['authorization', 'authToken'];
       let autoRead = true;
+      let autoWriteFiltered = false;
       if (isExtension) {
         try {
-          const result = await chrome.storage.local.get(['sync_filter_keys', 'sync_auto_read']);
+          const result = await chrome.storage.local.get(['sync_filter_keys', 'sync_auto_read', 'sync_auto_write_filtered']);
           if (result.sync_filter_keys) {
             keys = result.sync_filter_keys;
           }
           if (result.sync_auto_read !== undefined) {
             autoRead = result.sync_auto_read;
+          }
+          if (result.sync_auto_write_filtered !== undefined) {
+            autoWriteFiltered = result.sync_auto_write_filtered;
           }
         } catch (e) {
           console.error(e);
@@ -159,11 +173,15 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
         if (savedAutoRead !== null) {
           autoRead = savedAutoRead === 'true';
         }
+        const savedAutoWriteFiltered = localStorage.getItem('sync_auto_write_filtered');
+        if (savedAutoWriteFiltered !== null) {
+          autoWriteFiltered = savedAutoWriteFiltered === 'true';
+        }
       }
       setFilterKeys(keys);
       // 根据“默认自动读取”设置决定是否触发初次读取
       if (autoRead) {
-        await readData(false, keys);
+        await readData(false, keys, autoWriteFiltered);
       }
     };
     init();

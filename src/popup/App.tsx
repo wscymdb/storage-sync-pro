@@ -26,7 +26,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isExtension) {
       chrome.storage.local.get(
-        ["sync_box_items", "sync_theme", "sync_active_tab"],
+        ["sync_box_items", "sync_theme", "sync_active_tab", "sync_auto_write_to_page", "sync_auto_write_url"],
         (result) => {
           if (result.sync_box_items) {
             setBoxItems(result.sync_box_items);
@@ -37,14 +37,23 @@ const App: React.FC = () => {
           if (result.sync_active_tab) {
             setActiveTab(result.sync_active_tab);
           }
+
+          // 触发加载时自动写入检查 (暂存箱无数据时不写入，不与设置冲突)
+          handleAutoWriteCheck(
+            result.sync_box_items || {},
+            result.sync_auto_write_to_page || false,
+            result.sync_auto_write_url || ""
+          );
         },
       );
     } else {
       // 浏览器预览备用
+      let loadedBox = {};
       const localData = localStorage.getItem("sync_box_items");
       if (localData) {
         try {
-          setBoxItems(JSON.parse(localData));
+          loadedBox = JSON.parse(localData);
+          setBoxItems(loadedBox);
         } catch {}
       }
       const localTheme = localStorage.getItem("sync_theme") as "dark" | "light";
@@ -58,6 +67,12 @@ const App: React.FC = () => {
       if (localTab) {
         setActiveTab(localTab);
       }
+      
+      const savedAutoWrite = localStorage.getItem("sync_auto_write_to_page") === "true";
+      const savedAutoWriteUrl = localStorage.getItem("sync_auto_write_url") || "";
+
+      // 触发自动写入 Mock 检查
+      handleAutoWriteCheck(loadedBox, savedAutoWrite, savedAutoWriteUrl);
     }
   }, []);
 
@@ -100,14 +115,72 @@ const App: React.FC = () => {
     setToast({ message, type });
   };
 
+  // 检查并执行自动写入逻辑 (暂存箱无数据则跳过)
+  const handleAutoWriteCheck = async (
+    items: Record<string, string>,
+    enabled: boolean,
+    matchUrl: string
+  ) => {
+    if (!enabled || Object.keys(items).length === 0 || !matchUrl.trim()) {
+      return;
+    }
+
+    if (isExtension) {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab || !tab.id || !tab.url) return;
+
+        const currentUrl = tab.url.toLowerCase();
+        const pattern = matchUrl.trim().toLowerCase();
+
+        // 检查当前网址是否匹配用户填写的规则
+        if (currentUrl.includes(pattern)) {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (data) => {
+              Object.entries(data).forEach(([key, val]) => {
+                localStorage.setItem(key, val);
+              });
+            },
+            args: [items]
+          });
+          
+          showToast(
+            `[自动写入] 已向匹配网址自动写入暂存箱的 ${Object.keys(items).length} 个字段`,
+            "success"
+          );
+        }
+      } catch (err) {
+        console.error("自动写入失败:", err);
+      }
+    } else {
+      // 浏览器开发预览模式 Mock
+      const currentUrl = window.location.href.toLowerCase();
+      const pattern = matchUrl.trim().toLowerCase();
+      if (currentUrl.includes(pattern) || pattern === "localhost") {
+        showToast(
+          `[自动写入] 已自动写入暂存箱的 ${Object.keys(items).length} 个字段 (开发预览模式)`,
+          "success"
+        );
+      }
+    }
+  };
+
   // 添加到缓存箱
-  const handleAddToBox = (newItems: Record<string, string>) => {
+  const handleAddToBox = (newItems: Record<string, string>, isAutoSync: boolean = false) => {
     const updated = { ...boxItems, ...newItems };
     saveToStorage(updated);
-    showToast(
-      `成功将 ${Object.keys(newItems).length} 个字段存入缓存箱`,
-      "success",
-    );
+    if (isAutoSync) {
+      showToast(
+        `[自动同步] 已默认将读取的 ${Object.keys(newItems).length} 个筛选字段写入缓存箱`,
+        "success"
+      );
+    } else {
+      showToast(
+        `成功将 ${Object.keys(newItems).length} 个字段存入缓存箱`,
+        "success"
+      );
+    }
   };
 
   // 从缓存箱移除
