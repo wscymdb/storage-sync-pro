@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Storage Sync Pro",
+  "version": "1.0.0",
+  "description": "一键读取、编辑并跨页面写入 localStorage 数据的开发者利器",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ]
+}

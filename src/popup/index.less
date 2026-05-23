@@ -1,0 +1,363 @@
+/* 全局变量与设计系统 */
+:root {
+  --bg-primary: #0b0f19;
+  --bg-secondary: rgba(17, 24, 39, 0.7);
+  --bg-glass: rgba(30, 41, 59, 0.45);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-hover: rgba(255, 255, 255, 0.15);
+  
+  --color-primary: #3b82f6;      /* 科技蓝 */
+  --color-success: #10b981;      /* 极光绿 */
+  --color-warning: #f59e0b;      /* 琥珀橙 */
+  --color-danger: #ef4444;       /* 烈焰红 */
+  
+  --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  --gradient-danger: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.25);
+  --shadow-glow-success: 0 0 15px rgba(16, 185, 129, 0.25);
+  
+  --bg-toast: rgba(15, 23, 42, 0.88);
+  --shadow-toast: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 0, 0, 0.3);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* 极佳的轻量白色主题 */
+body.theme-light {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: rgba(248, 250, 252, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --border-glass: rgba(148, 163, 184, 0.18);
+  --border-glass-hover: rgba(148, 163, 184, 0.35);
+  
+  --color-primary: #2563eb;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  
+  --gradient-brand: linear-gradient(135deg, #2563eb 0%, #059669 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.55) 100%);
+  --gradient-danger: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 12px rgba(37, 99, 235, 0.12);
+  --shadow-glow-success: 0 0 12px rgba(5, 150, 105, 0.12);
+  
+  --bg-toast: rgba(255, 255, 255, 0.96);
+  --shadow-toast: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 20px rgba(15, 23, 42, 0.05);
+
+  /* 调整轻量模式下的滚动条样式 */
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    &:hover {
+      background: rgba(0, 0, 0, 0.25);
+    }
+  }
+
+  /* 调整轻量模式下的 logo 渐变样式 */
+  .logo-inner {
+    background: linear-gradient(135deg, #2563eb 0%, #059669 100%) !important;
+  }
+
+  /* —————— 全局主题兼容性覆盖 (Light Mode Adapters) —————— */
+  
+  // 1. 容器与标题
+  .app-container {
+    background: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.08) 0%, var(--bg-primary) 70%) !important;
+  }
+  .app-header .brand .title-area h1 {
+    background: linear-gradient(120deg, #0f172a 40%, #2563eb 90%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+  
+  // 2. 导航栏样式适配 (配合滑动指示器的高能去黑与高透白毛玻璃阴影)
+  .tab-navigation {
+    background: rgba(148, 163, 184, 0.12) !important;
+    
+    .tab-indicator {
+      background: var(--bg-glass) !important;
+      border-color: rgba(37, 99, 235, 0.15) !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+      
+      &::after {
+        background: var(--color-primary) !important;
+        box-shadow: 0 0 6px var(--color-primary) !important;
+      }
+    }
+    
+    .tab-btn {
+      &:hover:not(.active) {
+        background: rgba(0, 0, 0, 0.03) !important;
+        color: var(--text-primary) !important;
+      }
+      &.active {
+        color: var(--color-primary) !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+    }
+  }
+
+  // 3. 各种卡片与项的 Hover 适配 (解决深色硬编码背景)
+  .storage-item:hover,
+  .box-item:hover,
+  .account-card:hover,
+  .switch-wrapper:hover {
+    background: rgba(148, 163, 184, 0.1) !important;
+  }
+
+  // 4. 输入框 Focus 及背景适配
+  .input-search:focus {
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  // 5. 各种新增面板表单、编辑模式 (写入箱、账号簿)
+  .add-form,
+  .add-account-form {
+    background: rgba(255, 255, 255, 0.65) !important;
+    border-color: rgba(37, 99, 235, 0.18) !important;
+  }
+  
+  .box-item.editing {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(37, 99, 235, 0.25) !important;
+  }
+
+  // 6. 字节大小标签、筛选配置组件
+  .storage-item .key-details .badge.size,
+  .settings-card .filter-tags-grid {
+    background: rgba(0, 0, 0, 0.04) !important;
+    border-color: rgba(0, 0, 0, 0.06) !important;
+  }
+
+  // 7. 操作按钮 Hover 兼容
+  .btn-item-action:hover {
+    background: rgba(0, 0, 0, 0.05) !important;
+  }
+
+  // 8. JSON 展开块与 pre 标签高亮适配 (防刺眼，防白屏看不见)
+  .item-value-expanded {
+    background: rgba(0, 0, 0, 0.03) !important;
+    pre {
+      color: var(--color-primary) !important;
+    }
+  }
+
+  // 9. 链接文本与动作高亮 (解决浅色下亮蓝对比度不足)
+  .account-card:hover .card-header .url-container {
+    .url-text, .link-arrow {
+      color: var(--color-primary) !important;
+    }
+  }
+  .box-toolbar .btn-secondary.active {
+    color: var(--color-primary) !important;
+  }
+
+  // 10. 独立设置抽屉标题及背景
+  .settings-drawer-overlay {
+    background: rgba(241, 245, 249, 0.95) !important;
+    border-left-color: rgba(148, 163, 184, 0.2) !important;
+    
+    .drawer-header {
+      border-bottom-color: rgba(148, 163, 184, 0.15) !important;
+      
+      .drawer-title-area .drawer-title {
+        background: linear-gradient(120deg, #0f172a 40%, #2563eb 90%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+      }
+    }
+  }
+
+  // 11. 禁用状态按钮适配
+  .btn-primary.disabled,
+  .btn-write.disabled {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.06) !important;
+    color: var(--text-muted) !important;
+  }
+
+  // 12. 账号簿 (AccountPanel) 特殊适配 (完美解决灰框、低对比度字与看不见的虚线)
+  .account-card {
+    .card-header {
+      border-bottom-color: rgba(148, 163, 184, 0.15) !important;
+    }
+    
+    .credential-row {
+      .field-value-wrapper {
+        background: rgba(148, 163, 184, 0.12) !important;
+        border-color: rgba(148, 163, 184, 0.05) !important;
+        
+        .field-value.password-font {
+          color: var(--color-success) !important;
+        }
+
+        .btn-copy:hover,
+        .btn-hide-show:hover {
+          background: rgba(0, 0, 0, 0.06) !important;
+          color: var(--text-primary) !important;
+        }
+      }
+    }
+
+    .card-description-row {
+      border-top-color: rgba(148, 163, 184, 0.22) !important;
+      
+      .desc-icon {
+        color: var(--color-success) !important;
+      }
+    }
+
+    &.editing {
+      background: rgba(255, 255, 255, 0.8) !important;
+    }
+  }
+
+  .edit-card-form {
+    .input-field.small input {
+      background: rgba(255, 255, 255, 0.8) !important;
+      border-color: rgba(148, 163, 184, 0.25) !important;
+      color: var(--text-primary) !important;
+      
+      &:focus {
+        border-color: var(--color-primary) !important;
+      }
+    }
+  }
+
+  .settings-drawer-overlay {
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+/* 全局滚动列表防 Hover 裁剪垫片 (Headroom for float translate animations) */
+.list-scroll-area {
+  padding-top: 4px !important;
+  padding-bottom: 8px !important;
+}
+
+/* 基础重置 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html {
+  background-color: var(--bg-primary);
+  width: 480px;
+  height: 580px;
+  overflow: hidden;
+}
+
+body {
+  width: 480px;
+  height: 580px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tab 切换动画容器 (GPU-Accelerated Slide-up Fade & Scale Transition) */
+.tab-panel-wrapper {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: tabFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 自定义精致滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* 动画定义 */
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  }
+}

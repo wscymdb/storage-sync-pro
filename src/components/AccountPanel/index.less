@@ -1,0 +1,453 @@
+.account-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  .btn-add-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: var(--border-glass-hover);
+    }
+
+    &.active {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: var(--color-primary);
+      color: #60a5fa;
+    }
+  }
+
+  .account-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+
+    span {
+      color: var(--color-success);
+      font-weight: 700;
+    }
+  }
+}
+
+/* 新增账号卡片式表单 */
+.add-account-form {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .form-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-primary);
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  .input-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .input-icon {
+      position: absolute;
+      left: 10px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px 7px 32px;
+      font-size: 12px;
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
+      }
+
+      &::placeholder {
+        color: var(--text-muted);
+      }
+    }
+  }
+
+  .form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+
+    button {
+      border: none;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-glass);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+      }
+    }
+
+    .btn-confirm {
+      background: var(--color-primary);
+      color: white;
+
+      &:hover {
+        opacity: 0.9;
+        box-shadow: var(--shadow-glow);
+      }
+    }
+  }
+}
+
+/* 账号展示卡片列表 */
+.account-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(30, 41, 59, 0.55);
+    transform: translateY(-1.5px);
+    box-shadow: var(--shadow-md), 0 0 10px rgba(59, 130, 246, 0.05);
+
+    .card-header .url-container {
+      .url-text {
+        color: #60a5fa;
+        text-decoration: underline;
+      }
+      .link-arrow {
+        opacity: 1;
+        transform: translate(1px, -1px);
+        color: #60a5fa;
+      }
+    }
+  }
+
+  /* 卡片头部 */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+    .url-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 85%;
+      min-width: 0;
+
+      .globe {
+        color: var(--color-primary);
+        flex-shrink: 0;
+      }
+
+      .url-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: color 0.2s ease;
+      }
+
+      .link-arrow {
+        color: var(--text-muted);
+        opacity: 0.5;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .btn-card-action {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06);
+        }
+
+        &.edit:hover {
+          color: #60a5fa;
+          background: rgba(59, 130, 246, 0.1);
+        }
+
+        &.delete:hover {
+          color: var(--color-danger);
+          background: rgba(239, 68, 68, 0.15);
+        }
+      }
+    }
+  }
+
+  /* 编辑模式卡片锁定 */
+  &.editing {
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    background: rgba(15, 23, 42, 0.5) !important;
+    cursor: default !important;
+    transform: none !important;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.15) !important;
+
+    .card-header .url-container .url-text {
+      color: var(--text-primary) !important;
+      text-decoration: none !important;
+    }
+  }
+
+  /* 卡片内部行 */
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .credential-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      
+      svg {
+        color: var(--text-muted);
+      }
+    }
+
+    .field-value-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 4px;
+      padding: 3px 6px 3px 8px;
+      min-width: 0;
+      max-width: 70%;
+
+      .field-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &.password-font {
+          font-family: monospace;
+          letter-spacing: 0.5px;
+          color: var(--color-success);
+        }
+      }
+
+      .field-actions-inline {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        flex-shrink: 0;
+      }
+
+      .btn-copy, .btn-hide-show {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 3px;
+        transition: all 0.15s ease;
+
+        &:hover {
+          color: var(--text-primary);
+          background: rgba(255, 255, 255, 0.08);
+        }
+      }
+
+      .btn-hide-show:hover {
+        color: var(--color-primary);
+      }
+    }
+  }
+
+  /* 备注描述行 */
+  .card-description-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.01);
+    border-top: 1px dashed rgba(255, 255, 255, 0.05);
+    padding-top: 6px;
+    margin-top: 2px;
+    width: 100%;
+
+    .desc-icon {
+      color: #6ee7b7; /* 醒目的淡翡翠绿 */
+      flex-shrink: 0;
+    }
+
+    .desc-text {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+  }
+}
+
+/* 编辑卡片内部的嵌入表单 */
+.edit-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+
+  .edit-card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .input-field.small {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .input-icon {
+      position: absolute;
+      left: 8px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 5px 8px 5px 26px;
+      font-size: 11px;
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 6px rgba(59, 130, 246, 0.12);
+      }
+    }
+  }
+
+  .edit-form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 4px;
+
+    button {
+      border: none;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-edit-cancel {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-glass);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+      }
+    }
+
+    .btn-edit-save {
+      background: var(--color-primary);
+      color: white;
+
+      &:hover {
+        opacity: 0.9;
+        box-shadow: var(--shadow-glow);
+      }
+    }
+  }
+}
+

@@ -1,0 +1,493 @@
+/* 目标域名指示栏 */
+.target-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+
+  .target-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    max-width: 80%;
+
+    .globe-icon {
+      color: var(--color-primary);
+      filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.4));
+    }
+
+    .label {
+      color: var(--text-secondary);
+    }
+
+    .domain {
+      color: var(--text-primary);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .btn-clean {
+    background: transparent;
+    border: none;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+  }
+}
+
+/* 工具栏 */
+.box-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: var(--border-glass-hover);
+    }
+
+    &.active {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: var(--color-primary);
+      color: #60a5fa;
+    }
+  }
+
+  .box-multi-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .divider {
+      color: rgba(255, 255, 255, 0.15);
+      font-size: 11px;
+    }
+
+    .btn-link {
+      background: transparent;
+      border: none;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: var(--text-primary);
+      }
+
+      &.danger {
+        color: rgba(239, 68, 68, 0.85);
+
+        &:hover {
+          color: var(--color-danger);
+        }
+      }
+    }
+  }
+}
+
+/* 手动添加字段表单 */
+.add-form {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .form-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-primary);
+    letter-spacing: 0.5px;
+  }
+
+  .input-text {
+    width: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 12px;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.2s ease;
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-glow);
+    }
+  }
+
+  .input-textarea {
+    width: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: monospace;
+    color: var(--text-primary);
+    outline: none;
+    resize: none;
+    transition: all 0.2s ease;
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-glow);
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    button {
+      border: none;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-glass);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+      }
+    }
+
+    .btn-submit {
+      background: var(--color-primary);
+      color: white;
+
+      &:hover {
+        opacity: 0.9;
+        box-shadow: var(--shadow-glow);
+      }
+    }
+  }
+}
+
+/* 缓存箱列表及行项 */
+.box-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.box-item {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--border-glass-hover);
+    background: rgba(30, 41, 59, 0.55);
+  }
+
+  &.selected {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.04);
+  }
+
+  .item-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+  }
+
+  .checkbox-wrapper {
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+
+    input {
+      display: none;
+    }
+
+    .custom-checkbox {
+      width: 15px;
+      height: 15px;
+      border: 1px solid var(--text-muted);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      color: white;
+    }
+
+    input:checked + .custom-checkbox {
+      background: var(--color-success);
+      border-color: var(--color-success);
+    }
+  }
+
+  .key-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .btn-item-action {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      &.edit:hover {
+        color: var(--color-primary);
+      }
+
+      &.delete:hover {
+        color: var(--color-danger);
+      }
+    }
+  }
+
+  .item-value-preview {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 0 12px 10px 37px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+
+    .empty-value {
+      font-style: italic;
+      color: var(--text-muted);
+    }
+  }
+
+  /* 内联编辑表单样式 */
+  &.editing {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(15, 23, 42, 0.5);
+
+    .edit-form-inline {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    .edit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &.column {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .edit-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        min-width: 40px;
+      }
+    }
+
+    .input-edit-key {
+      flex-grow: 1;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 5px 8px;
+      font-size: 12px;
+      color: var(--text-primary);
+      outline: none;
+
+      &:focus {
+        border-color: var(--color-primary);
+      }
+    }
+
+    .input-edit-val {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      font-size: 12px;
+      color: var(--text-primary);
+      outline: none;
+      font-family: monospace;
+      resize: none;
+
+      &:focus {
+        border-color: var(--color-primary);
+      }
+    }
+
+    .edit-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+
+      button {
+        border: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-edit-cancel {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-glass);
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: var(--text-primary);
+        }
+      }
+
+      .btn-edit-save {
+        background: var(--color-primary);
+        color: white;
+
+        &:hover {
+          box-shadow: var(--shadow-glow);
+        }
+      }
+    }
+  }
+}
+
+/* 底部写入动作区 */
+.action-bar-write {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 4px;
+  background: linear-gradient(to top, var(--bg-primary) 85%, transparent);
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+
+  .write-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+
+    .warning-icon {
+      color: var(--color-warning);
+    }
+  }
+
+  .btn-write {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-success);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+
+    &:hover:not(.disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-glow-success);
+      animation: pulseGlow 1.5s infinite;
+    }
+
+    &:active:not(.disabled) {
+      transform: translateY(0);
+    }
+
+    &.disabled {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-glass);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+      animation: none;
+    }
+  }
+}
