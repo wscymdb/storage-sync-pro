@@ -53,6 +53,8 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
     new Set(),
   );
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const isExtension =
     typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
 
@@ -239,12 +241,61 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
     showToast("已取消修改", "info");
   };
 
-  // 删除账号
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  /**
+   * 点击删除按钮，开启二次确认状态
+   * @param id 被删除账号项 ID
+   * @param e 鼠标点击事件
+   */
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingId(id);
+  };
+
+  /**
+   * 确认并真正执行删除账号
+   * @param id 被删除账号项 ID
+   * @param e 鼠标点击事件
+   */
+  const handleConfirmDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = items.filter((item) => item.id !== id);
     saveItems(updated);
+    setDeletingId(null);
     showToast("账号项已删除", "info");
+  };
+
+  /**
+   * 取消删除确认操作
+   * @param e 鼠标点击事件
+   */
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingId(null);
+  };
+
+  /**
+   * 复制并新建一个一模一样的账号项 (克隆功能)
+   * @param item 被复制的账号项
+   * @param e 鼠标点击事件
+   */
+  const handleClone = (item: AccountItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const clonedItem: AccountItem = {
+      ...item,
+      id: Date.now().toString(), // 保证生成唯一的正式 ID
+    };
+
+    // 找到原 item 的位置，在它后面插入克隆出来的 item，保证完美的交互顺序
+    const index = items.findIndex((i) => i.id === item.id);
+    const updated = [...items];
+    if (index !== -1) {
+      updated.splice(index + 1, 0, clonedItem);
+    } else {
+      updated.unshift(clonedItem);
+    }
+
+    saveItems(updated);
+    showToast("已成功复制并新建该账号项", "success");
   };
 
   // 打开 URL
@@ -384,13 +435,35 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
             {items.map((item) => {
               const isPasswordVisible = visiblePasswords.has(item.id);
               const isEditing = editingId === item.id;
+              const isDeleting = deletingId === item.id;
 
               return (
                 <div
                   key={item.id}
-                  className={`account-card ${isEditing ? "editing" : ""}`}
+                  className={`account-card ${isEditing ? "editing" : ""} ${isDeleting ? "deleting" : ""}`}
                   onClick={(e) => handleCardClick(item, e)}
                 >
+                  {isDeleting && (
+                    <div className="card-delete-overlay" onClick={(e) => e.stopPropagation()}>
+                      <span className="confirm-msg">确认删除此账号项？</span>
+                      <div className="confirm-actions">
+                        <button
+                          type="button"
+                          className="btn-action-cancel"
+                          onClick={handleCancelDelete}
+                        >
+                          取消
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-action-delete"
+                          onClick={(e) => handleConfirmDelete(item.id, e)}
+                        >
+                          确认删除
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {isEditing ? (
                     /* 编辑状态卡片内部渲染 */
                     <form
@@ -473,6 +546,13 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
+                            className="btn-card-action clone"
+                            onClick={(e) => handleClone(item, e)}
+                            title="复制并新建此项"
+                          >
+                            <Copy size={12} />
+                          </button>
+                          <button
                             className="btn-card-action edit"
                             onClick={(e) => handleStartEdit(item, e)}
                             title="编辑此项"
@@ -481,7 +561,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
                           </button>
                           <button
                             className="btn-card-action delete"
-                            onClick={(e) => handleDelete(item.id, e)}
+                            onClick={(e) => handleDeleteClick(item.id, e)}
                             title="删除此项"
                           >
                             <Trash2 size={12} />

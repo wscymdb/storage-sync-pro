@@ -244,6 +244,39 @@ body.theme-light {
     &.editing {
       background: rgba(255, 255, 255, 0.8) !important;
     }
+
+    // 覆盖删除二次确认遮罩的样式，让其在浅色主题下清晰易读且高级美观！
+    .card-delete-overlay {
+      background: rgba(255, 255, 255, 0.85) !important; // 浅色高透白磨砂
+
+      .confirm-msg {
+        color: #0f172a !important; // 纯暗文案，完美提升对比度
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+      }
+
+      .confirm-actions {
+        .btn-action-cancel {
+          background: rgba(0, 0, 0, 0.05) !important;
+          color: #475569 !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.1) !important;
+            color: #0f172a !important;
+          }
+        }
+
+        .btn-action-delete {
+          background: #dc2626 !important; // 浅色模式下更明亮的警示红
+          box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2) !important;
+
+          &:hover {
+            background: #b91c1c !important;
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.35) !important;
+          }
+        }
+      }
+    }
   }
 
   .edit-card-form {
