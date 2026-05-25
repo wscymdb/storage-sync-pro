@@ -451,3 +451,10 @@
   }
 }
 
+/* 重写滚动列表区域的底部边距 (账号簿没有底部浮动条，应消除 60px 的占位留白，限定选择器以防污染读取页和写入页) */
+.account-panel-container {
+  .list-scroll-area {
+    margin-bottom: 0 !important;
+  }
+}
+

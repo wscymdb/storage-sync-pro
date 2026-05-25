@@ -190,7 +190,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
   };
 
   return (
-    <div className="panel-container">
+    <div className="panel-container account-panel-container">
       {/* 快捷工具栏 */}
       <div className="account-toolbar">
         <button 
