@@ -26,6 +26,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
 
   // 编辑账号状态
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [originalItem, setOriginalItem] = useState<AccountItem | null>(null); // 备份原始数据，用于取消时撤销自动保存的临时修改
   const [editUrl, setEditUrl] = useState('');
   const [editAccount, setEditAccount] = useState('');
   const [editPassword, setEditPassword] = useState('');
@@ -52,6 +53,31 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
       }
     }
   }, []);
+
+  // 监听编辑状态变化，实现打字即时自动保存 (Keystroke Auto-save)
+  // 不论用户是直接关闭插件还是切换 Tab，在此期间的所有输入都会在后台瞬间默默持久化保存，零丢包！
+  useEffect(() => {
+    if (!editingId) return;
+
+    // 校验必填项，如果不合法则不执行自动保存，防止存入空数据导致脏项
+    if (!editUrl.trim() || !editAccount.trim()) return;
+
+    const updated = items.map(item => {
+      if (item.id === editingId) {
+        return {
+          ...item,
+          url: editUrl.trim(),
+          account: editAccount.trim(),
+          password: editPassword,
+          description: editDescription.trim()
+        };
+      }
+      return item;
+    });
+
+    // 默默后台保存，不弹 Toast 以免干扰用户连续打字
+    saveItems(updated);
+  }, [editingId, editUrl, editAccount, editPassword, editDescription]);
 
   // 持久化保存
   const saveItems = (updated: AccountItem[]) => {
@@ -95,18 +121,19 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
     showToast('成功添加快捷账号项', 'success');
   };
 
-  // 启动编辑
+  // 启动编辑并创建原始数据备份
   const handleStartEdit = (item: AccountItem, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingId(item.id);
+    setOriginalItem(item); // 备份原始状态，用于实现完美撤销
     setEditUrl(item.url);
     setEditAccount(item.account);
     setEditPassword(item.password || '');
     setEditDescription(item.description || '');
   };
 
-  // 保存修改
-  const handleSaveEdit = (id: string, e: React.FormEvent) => {
+  // 完成编辑（打字过程中已自动保存，此处主要是退出编辑状态）
+  const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editUrl.trim()) {
       showToast('URL 不能为空', 'warning');
@@ -117,22 +144,25 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
       return;
     }
 
-    const updated = items.map(item => {
-      if (item.id === id) {
-        return {
-          ...item,
-          url: editUrl.trim(),
-          account: editAccount.trim(),
-          password: editPassword,
-          description: editDescription.trim()
-        };
-      }
-      return item;
-    });
-
-    saveItems(updated);
     setEditingId(null);
-    showToast('已保存修改项', 'success');
+    setOriginalItem(null);
+    showToast('已保存账号修改', 'success');
+  };
+
+  // 取消编辑并撤销自动保存的修改
+  const handleCancelEdit = () => {
+    if (originalItem) {
+      const updated = items.map(item => {
+        if (item.id === originalItem.id) {
+          return originalItem;
+        }
+        return item;
+      });
+      saveItems(updated);
+    }
+    setEditingId(null);
+    setOriginalItem(null);
+    showToast('已取消修改', 'info');
   };
 
   // 删除账号
@@ -287,7 +317,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
                 >
                   {isEditing ? (
                     /* 编辑状态卡片内部渲染 */
-                    <form className="edit-card-form" onSubmit={(e) => handleSaveEdit(item.id, e)} onClick={(e) => e.stopPropagation()}>
+                    <form className="edit-card-form" onSubmit={handleSaveEdit} onClick={(e) => e.stopPropagation()}>
                       <div className="edit-card-title">编辑账号信息</div>
                       
                       <div className="input-field small">
@@ -333,11 +363,11 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
                       </div>
 
                       <div className="edit-form-buttons">
-                        <button type="button" className="btn-edit-cancel" onClick={() => setEditingId(null)}>
+                        <button type="button" className="btn-edit-cancel" onClick={handleCancelEdit}>
                           取消
                         </button>
                         <button type="submit" className="btn-edit-save">
-                          保存
+                          完成
                         </button>
                       </div>
                     </form>
