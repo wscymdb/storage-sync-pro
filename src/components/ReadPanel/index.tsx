@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, RefreshCw, Box, Check, Copy, ChevronDown, ChevronUp, AlertCircle, FileJson, Settings } from 'lucide-react';
+import { matchUrlPattern } from '../../utils/urlMatcher';
 import './index.less';
 
 interface ReadPanelProps {
@@ -147,9 +148,10 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
       let keys = ['authorization', 'authToken'];
       let autoRead = true;
       let autoWriteFiltered = false;
+      let autoReadUrl = '';
       if (isExtension) {
         try {
-          const result = await chrome.storage.local.get(['sync_filter_keys', 'sync_auto_read', 'sync_auto_write_filtered']);
+          const result = await chrome.storage.local.get(['sync_filter_keys', 'sync_auto_read', 'sync_auto_write_filtered', 'sync_auto_read_url']);
           if (result.sync_filter_keys) {
             keys = result.sync_filter_keys;
           }
@@ -158,6 +160,9 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
           }
           if (result.sync_auto_write_filtered !== undefined) {
             autoWriteFiltered = result.sync_auto_write_filtered;
+          }
+          if (result.sync_auto_read_url !== undefined) {
+            autoReadUrl = result.sync_auto_read_url;
           }
         } catch (e) {
           console.error(e);
@@ -177,11 +182,35 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
         if (savedAutoWriteFiltered !== null) {
           autoWriteFiltered = savedAutoWriteFiltered === 'true';
         }
+        const savedAutoReadUrl = localStorage.getItem('sync_auto_read_url');
+        if (savedAutoReadUrl !== null) {
+          autoReadUrl = savedAutoReadUrl;
+        }
       }
       setFilterKeys(keys);
-      // 根据“默认自动读取”设置决定是否触发初次读取
+      // 根据“默认自动读取”设置以及模糊网址规则决定是否触发初次读取
       if (autoRead) {
-        await readData(false, keys, autoWriteFiltered);
+        let shouldRead = true;
+        if (autoReadUrl.trim()) {
+          let currentUrl = '';
+          if (isExtension) {
+            try {
+              const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+              currentUrl = tab?.url || '';
+            } catch (err) {
+              console.error('自动读取时获取当前页面网址失败:', err);
+            }
+          } else {
+            currentUrl = window.location.href;
+          }
+
+          // NOTE: 使用智能通配符网址校验
+          shouldRead = matchUrlPattern(currentUrl, autoReadUrl);
+        }
+
+        if (shouldRead) {
+          await readData(false, keys, autoWriteFiltered);
+        }
       }
     };
     init();

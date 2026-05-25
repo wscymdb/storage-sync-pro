@@ -174,23 +174,6 @@
 
     .input-new-tag {
       flex-grow: 1;
-      background: var(--bg-primary);
-      border: 1px solid var(--border-glass);
-      border-radius: var(--radius-sm);
-      padding: 7px 10px;
-      font-size: 12px;
-      color: var(--text-primary);
-      outline: none;
-      transition: all 0.2s ease;
-
-      &:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
-      }
-
-      &::placeholder {
-        color: var(--text-muted);
-      }
     }
 
     .btn-add-tag-submit {
@@ -229,5 +212,26 @@
   .shield-icon {
     color: var(--color-success);
     opacity: 0.7;
+  }
+}
+
+/* 通用输入框样式 (兼容独立配置与表单配置) */
+.input-new-tag {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
+  }
+
+  &::placeholder {
+    color: var(--text-muted);
   }
 }

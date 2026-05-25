@@ -15,6 +15,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   const [autoWriteFiltered, setAutoWriteFiltered] = useState(false);
   const [autoWriteToPage, setAutoWriteToPage] = useState(false);
   const [autoWriteUrl, setAutoWriteUrl] = useState('');
+  const [autoReadUrl, setAutoReadUrl] = useState('');
 
   const handleToggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -26,7 +27,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   // 初始化加载设置
   useEffect(() => {
     if (isExtension) {
-      chrome.storage.local.get(['sync_auto_read', 'sync_filter_keys', 'sync_auto_write_filtered', 'sync_auto_write_to_page', 'sync_auto_write_url'], (result) => {
+      chrome.storage.local.get(['sync_auto_read', 'sync_filter_keys', 'sync_auto_write_filtered', 'sync_auto_write_to_page', 'sync_auto_write_url', 'sync_auto_read_url'], (result) => {
         if (result.sync_auto_read !== undefined) {
           setAutoRead(result.sync_auto_read);
         }
@@ -41,6 +42,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
         }
         if (result.sync_auto_write_url !== undefined) {
           setAutoWriteUrl(result.sync_auto_write_url);
+        }
+        if (result.sync_auto_read_url !== undefined) {
+          setAutoReadUrl(result.sync_auto_read_url);
         }
       });
     } else {
@@ -65,6 +69,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
       const savedAutoWriteUrl = localStorage.getItem('sync_auto_write_url');
       if (savedAutoWriteUrl !== null) {
         setAutoWriteUrl(savedAutoWriteUrl);
+      }
+      const savedAutoReadUrl = localStorage.getItem('sync_auto_read_url');
+      if (savedAutoReadUrl !== null) {
+        setAutoReadUrl(savedAutoReadUrl);
       }
     }
   }, []);
@@ -119,6 +127,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
       chrome.storage.local.set({ sync_auto_write_url: val });
     } else {
       localStorage.setItem('sync_auto_write_url', val);
+    }
+  };
+
+  // 保存读取匹配网址
+  const handleAutoReadUrlChange = (val: string) => {
+    setAutoReadUrl(val);
+    if (isExtension) {
+      chrome.storage.local.set({ sync_auto_read_url: val });
+    } else {
+      localStorage.setItem('sync_auto_read_url', val);
     }
   };
 
@@ -199,6 +217,31 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
             )}
           </button>
         </div>
+
+        {/* 读取匹配网址输入框 */}
+        {autoRead && (
+          <div className="settings-card url-config-card" style={{ marginTop: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              <Link size={12} style={{ color: 'var(--color-primary)' }} />
+              <span>自动读取网页限制 <span style={{ color: 'var(--text-muted)' }}>(可选)</span></span>
+            </div>
+            <input
+              type="text"
+              className="input-new-tag"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+              placeholder="留空对所有网址生效。例如填写: localhost"
+              value={autoReadUrl}
+              onChange={(e) => handleAutoReadUrlChange(e.target.value)}
+            />
+            
+            <div className="config-tip" style={{ padding: '6px 8px', marginTop: '2px', border: '1px solid rgba(59, 130, 246, 0.1)', background: 'rgba(59, 130, 246, 0.03)' }}>
+              <Info size={12} className="info-icon" style={{ marginTop: '1.5px', color: '#60a5fa', flexShrink: 0 }} />
+              <span style={{ fontSize: '10.5px', lineHeight: 1.3, color: 'var(--text-secondary)' }}>
+                💡 <strong>智能模糊匹配：</strong>可选填。若填写，只有当前网址包含该词（例如 <code>localhost</code>）时才会触发自动读取，提升隐私安全。
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* 卡片二：是否开启过滤数据默认写入 (与卡片一联动) */}
         <div 

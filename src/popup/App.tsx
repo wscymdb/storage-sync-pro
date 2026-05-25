@@ -5,6 +5,7 @@ import WritePanel from "../components/WritePanel";
 import AccountPanel from "../components/AccountPanel";
 import SettingsPanel from "../components/SettingsPanel";
 import Toast, { ToastType } from "../components/Toast";
+import { matchUrlPattern } from "../utils/urlMatcher";
 import "./App.less";
 
 const App: React.FC = () => {
@@ -130,11 +131,10 @@ const App: React.FC = () => {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (!tab || !tab.id || !tab.url) return;
 
-        const currentUrl = tab.url.toLowerCase();
-        const pattern = matchUrl.trim().toLowerCase();
+        const currentUrl = tab.url;
 
-        // 检查当前网址是否匹配用户填写的规则
-        if (currentUrl.includes(pattern)) {
+        // NOTE: 使用智能通配符网址校验
+        if (matchUrlPattern(currentUrl, matchUrl)) {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: (data) => {
@@ -155,9 +155,8 @@ const App: React.FC = () => {
       }
     } else {
       // 浏览器开发预览模式 Mock
-      const currentUrl = window.location.href.toLowerCase();
-      const pattern = matchUrl.trim().toLowerCase();
-      if (currentUrl.includes(pattern) || pattern === "localhost") {
+      const currentUrl = window.location.href;
+      if (matchUrlPattern(currentUrl, matchUrl) || matchUrl.trim().toLowerCase() === "localhost") {
         showToast(
           `[自动写入] 已自动写入暂存箱的 ${Object.keys(items).length} 个字段 (开发预览模式)`,
           "success"
