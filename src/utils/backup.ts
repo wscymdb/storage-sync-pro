@@ -100,6 +100,7 @@ interface ImportOptions {
   importAccounts: boolean;
   importFilters: boolean;
   importSettings: boolean;
+  importBoxItems: boolean;
 }
 
 /**
@@ -117,7 +118,7 @@ export const mergeAndImportBackup = async (
 
   try {
     const updatePayload: Record<string, any> = {};
-    const { importAccounts, importFilters, importSettings } = options;
+    const { importAccounts, importFilters, importSettings, importBoxItems } = options;
 
     // 1. 智能去重合并账号簿
     if (importAccounts) {
@@ -178,6 +179,14 @@ export const mergeAndImportBackup = async (
           updatePayload[key] = pendingBackupData[key];
         }
       });
+    }
+
+    // 4. NOTE: 智能合并缓存写入箱 (sync_box_items)
+    if (importBoxItems) {
+      const localBoxItems = (await getSingleStorageKey('sync_box_items', isExtension)) || {};
+      const backupBoxItems = pendingBackupData.sync_box_items || {};
+      // 将备份中的缓存写入箱数据增量合并到本地缓存写入箱中，保留本地已有键值对
+      updatePayload['sync_box_items'] = { ...localBoxItems, ...backupBoxItems };
     }
 
     // 执行落盘保存写入

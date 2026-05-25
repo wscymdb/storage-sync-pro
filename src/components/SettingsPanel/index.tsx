@@ -21,10 +21,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   // 备份与智能导入恢复状态
   const [showImportModal, setShowImportModal] = useState(false);
   const [pendingBackupData, setPendingBackupData] = useState<any>(null);
-  const [backupStats, setBackupStats] = useState({ accounts: 0, filters: 0 });
+  const [backupStats, setBackupStats] = useState({ accounts: 0, filters: 0, boxItems: 0 });
   const [importAccounts, setImportAccounts] = useState(true);
   const [importFilters, setImportFilters] = useState(true);
   const [importSettings, setImportSettings] = useState(true);
+  const [importBoxItems, setImportBoxItems] = useState(true);
 
   const handleToggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -221,15 +222,18 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
         const filterKeysCount = parsed.data.sync_filter_keys?.length || 0;
         const rulesCount = parsed.data.sync_read_filter_rules?.length || 0;
         const totalFilters = filterKeysCount + rulesCount;
+        const boxItemsCount = parsed.data.sync_box_items ? Object.keys(parsed.data.sync_box_items).length : 0;
         
         setBackupStats({
           accounts: accountsCount,
-          filters: totalFilters
+          filters: totalFilters,
+          boxItems: boxItemsCount
         });
 
         // 默认按检测状态进行智能勾选
         setImportAccounts(accountsCount > 0);
         setImportFilters(totalFilters > 0);
+        setImportBoxItems(boxItemsCount > 0);
         setImportSettings(true);
 
         setShowImportModal(true);
@@ -245,7 +249,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   const handleConfirmImportClick = async () => {
     const success = await mergeAndImportBackup(
       pendingBackupData,
-      { importAccounts, importFilters, importSettings },
+      { importAccounts, importFilters, importSettings, importBoxItems },
       !!isExtension
     );
 
@@ -519,6 +523,27 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
                   </div>
                 </div>
 
+                {/* 缓存写入箱选项 */}
+                <div 
+                  className={`import-option-item ${backupStats.boxItems === 0 ? 'disabled' : ''}`}
+                  onClick={() => backupStats.boxItems > 0 && setImportBoxItems(!importBoxItems)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={importBoxItems}
+                    disabled={backupStats.boxItems === 0}
+                    onChange={() => {}}
+                  />
+                  <div className="option-info">
+                    <span className="option-label">缓存写入箱数据 (Box)</span>
+                    <span className="option-desc">
+                      {backupStats.boxItems > 0 
+                        ? `检测到 ${backupStats.boxItems} 个暂存字段 (将与当前暂存数据合并)` 
+                        : '未检测到任何暂存箱数据'}
+                    </span>
+                  </div>
+                </div>
+
                 {/* 网址匹配与过滤选项 */}
                 <div 
                   className={`import-option-item ${backupStats.filters === 0 ? 'disabled' : ''}`}
@@ -566,7 +591,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
                 type="button" 
                 className="btn-modal-confirm" 
                 onClick={handleConfirmImportClick}
-                disabled={!importAccounts && !importFilters && !importSettings}
+                disabled={!importAccounts && !importFilters && !importSettings && !importBoxItems}
               >
                 安全导入并重载
               </button>
