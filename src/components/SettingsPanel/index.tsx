@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ToggleLeft, ToggleRight, Globe, Shield, Sliders, Plus, X, Info, Sun, Moon, Link } from 'lucide-react';
+import { exportBackupData, mergeAndImportBackup } from '../../utils/backup';
 import './index.less';
 
 interface SettingsPanelProps {
@@ -16,6 +17,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   const [autoWriteToPage, setAutoWriteToPage] = useState(false);
   const [autoWriteUrl, setAutoWriteUrl] = useState('');
   const [autoReadUrl, setAutoReadUrl] = useState('');
+
+  // 备份与智能导入恢复状态
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [pendingBackupData, setPendingBackupData] = useState<any>(null);
+  const [backupStats, setBackupStats] = useState({ accounts: 0, filters: 0 });
+  const [importAccounts, setImportAccounts] = useState(true);
+  const [importFilters, setImportFilters] = useState(true);
+  const [importSettings, setImportSettings] = useState(true);
 
   const handleToggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -104,6 +113,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
     }
     showToast(nextVal ? '已开启筛选字段默认写入缓存箱' : '已关闭默认写入缓存箱', 'success');
   };
+
   // 保存是否开启加载时自动写入
   const handleToggleAutoWriteToPage = () => {
     const nextVal = !autoWriteToPage;
@@ -170,6 +180,84 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
       localStorage.setItem('sync_filter_keys', JSON.stringify(updated));
     }
     showToast(`已移除筛选字段: ${keyToRemove}`, 'info');
+  };
+
+  // ==================== 备份与导入同步 UI 动作回调 ====================
+
+  // 触发导出
+  const handleExportBackupClick = async () => {
+    const success = await exportBackupData(!!isExtension);
+    if (success) {
+      showToast('备份导出成功！已自动触发 JSON 备份包下载', 'success');
+    } else {
+      showToast('备份导出失败，请重试', 'error');
+    }
+  };
+
+  // 触发文件选择框
+  const triggerFileInput = () => {
+    const input = document.getElementById('backup-file-input');
+    if (input) input.click();
+  };
+
+  // 解析备份文件并呼唤智能合并 modal 弹窗
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (!parsed || parsed.version === undefined || !parsed.data) {
+          showToast('非法的备份 JSON 配置文件', 'error');
+          return;
+        }
+
+        setPendingBackupData(parsed.data);
+        
+        // 智能分析包内资源
+        const accountsCount = parsed.data.sync_account_items?.length || 0;
+        const filterKeysCount = parsed.data.sync_filter_keys?.length || 0;
+        const rulesCount = parsed.data.sync_read_filter_rules?.length || 0;
+        const totalFilters = filterKeysCount + rulesCount;
+        
+        setBackupStats({
+          accounts: accountsCount,
+          filters: totalFilters
+        });
+
+        // 默认按检测状态进行智能勾选
+        setImportAccounts(accountsCount > 0);
+        setImportFilters(totalFilters > 0);
+        setImportSettings(true);
+
+        setShowImportModal(true);
+      } catch (err) {
+        showToast('备份包解析失败，请检查文件格式是否损坏', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // 重置 input 允许重复上传相同文件
+  };
+
+  // 确认导入并重载
+  const handleConfirmImportClick = async () => {
+    const success = await mergeAndImportBackup(
+      pendingBackupData,
+      { importAccounts, importFilters, importSettings },
+      !!isExtension
+    );
+
+    if (success) {
+      setShowImportModal(false);
+      showToast('智能备份同步合并成功！系统正在刷新生效...', 'success');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } else {
+      showToast('备份合并导入失败，请检查数据完整性', 'error');
+    }
   };
 
   return (
@@ -360,11 +448,132 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
         </div>
       </div>
 
+      {/* 模块：系统备份与同步 */}
+      <div className="settings-section">
+        <div className="section-title">
+          <Shield size={14} className="icon-title" />
+          <span>跨浏览器备份与同步</span>
+        </div>
+        
+        <div className="settings-card backup-config-card">
+          <div className="config-tip">
+            <Info size={12} className="info-icon" />
+            <span>导出全配置 JSON 包，可用于在 Chrome 与 Edge 或其他设备间瞬间同步账号和规则。</span>
+          </div>
+
+          <div className="backup-actions">
+            <button type="button" className="btn-backup-action export" onClick={handleExportBackupClick}>
+              💾 导出备份数据包
+            </button>
+            <button type="button" className="btn-backup-action import" onClick={triggerFileInput}>
+              📥 导入外部备份包
+            </button>
+            <input
+              type="file"
+              id="backup-file-input"
+              style={{ display: 'none' }}
+              accept=".json"
+              onChange={handleFileChange}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* 底部系统信息 */}
       <div className="settings-footer">
         <Shield size={12} className="shield-icon" />
-        <span>安全沙箱模式已激活 • 数据完全存储在本地本地加密存储中</span>
+        <span>安全沙箱模式已激活 • 数据完全存储在本地加密存储中</span>
       </div>
+
+      {/* 智能导入备份模态框 (Glassmorphic Modal) */}
+      {showImportModal && (
+        <div className="import-modal-overlay">
+          <div className="import-modal-card">
+            <div className="modal-header">
+              <Shield size={16} className="modal-logo" />
+              <h3>智能备份导入面板</h3>
+            </div>
+            
+            <div className="modal-body">
+              <p className="modal-desc">已成功读取外部备份包！请勾选你想要合并或覆盖的配置项：</p>
+              
+              <div className="import-options-list">
+                {/* 账号簿选项 */}
+                <div 
+                  className={`import-option-item ${backupStats.accounts === 0 ? 'disabled' : ''}`}
+                  onClick={() => backupStats.accounts > 0 && setImportAccounts(!importAccounts)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={importAccounts}
+                    disabled={backupStats.accounts === 0}
+                    onChange={() => {}}
+                  />
+                  <div className="option-info">
+                    <span className="option-label">账号簿备份数据</span>
+                    <span className="option-desc">
+                      {backupStats.accounts > 0 
+                        ? `检测到 ${backupStats.accounts} 个账号 (将与当前账号智能合并去重)` 
+                        : '未检测到任何账号数据'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 网址匹配与过滤选项 */}
+                <div 
+                  className={`import-option-item ${backupStats.filters === 0 ? 'disabled' : ''}`}
+                  onClick={() => backupStats.filters > 0 && setImportFilters(!importFilters)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={importFilters}
+                    disabled={backupStats.filters === 0}
+                    onChange={() => {}}
+                  />
+                  <div className="option-info">
+                    <span className="option-label">过滤字段与匹配拦截规则</span>
+                    <span className="option-desc">
+                      {backupStats.filters > 0 
+                        ? `检测到匹配拦截配置 (将与当前规则合并去重)` 
+                        : '未检测到拦截配置数据'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 读写偏好设置 */}
+                <div 
+                  className="import-option-item"
+                  onClick={() => setImportSettings(!importSettings)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={importSettings}
+                    onChange={() => {}}
+                  />
+                  <div className="option-info">
+                    <span className="option-label">自动读写与偏好选项</span>
+                    <span className="option-desc">包含自动读取开关、自动写入网址、亮暗色模式 (将覆盖当前设置)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" className="btn-modal-cancel" onClick={() => setShowImportModal(false)}>
+                取消
+              </button>
+              <button 
+                type="button" 
+                className="btn-modal-confirm" 
+                onClick={handleConfirmImportClick}
+                disabled={!importAccounts && !importFilters && !importSettings}
+              >
+                安全导入并重载
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
