@@ -4,12 +4,24 @@ import { matchUrlPattern } from '../../utils/urlMatcher';
 import './index.less';
 
 interface ReadPanelProps {
+  filterKeys: string[];
+  autoRead: boolean;
+  autoWriteFiltered: boolean;
+  autoReadUrl: string;
   onAddToBox: (items: Record<string, string>, isAutoSync?: boolean) => void;
   showToast: (msg: string, type: 'success' | 'error' | 'warning' | 'info') => void;
   onNavigateToSettings: () => void;
 }
 
-const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigateToSettings }) => {
+const ReadPanel: React.FC<ReadPanelProps> = ({
+  filterKeys,
+  autoRead,
+  autoWriteFiltered,
+  autoReadUrl,
+  onAddToBox,
+  showToast,
+  onNavigateToSettings
+}) => {
   const [loading, setLoading] = useState(false);
   const [currentDomain, setCurrentDomain] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,15 +29,11 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
-  // 筛选字段相关状态，默认值为 authorization 和 authToken
-  const [filterKeys, setFilterKeys] = useState<string[]>(['authorization', 'authToken']);
-
   const isExtension = typeof chrome !== 'undefined' && chrome.tabs && chrome.scripting;
 
   // 读取 localStorage
   const readData = async (readAll: boolean = false, customFilters?: string[], autoWriteOnSuccess: boolean = false) => {
     setLoading(true);
-    setSelectedKeys(new Set());
     setExpandedKeys(new Set());
 
     // 决定本次要过滤的键值列表。如果是读取所有，则为 []，否则如果传入了 customFilters 则用其覆盖，再次则取当前状态 filterKeys
@@ -69,6 +77,21 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
         if (autoWriteOnSuccess && Object.keys(filteredData).length > 0) {
           onAddToBox(filteredData, true);
         }
+
+        setSelectedKeys(prev => {
+          const next = new Set<string>();
+          // 保留当前已选择且在新数据中依然存在的 key
+          prev.forEach(k => {
+            if (filteredData[k] !== undefined) {
+              next.add(k);
+            }
+          });
+          // 如果是自动写入或手动筛选读取，则将读取出来的所有 key 也自动勾选
+          if (autoWriteOnSuccess || !readAll) {
+            Object.keys(filteredData).forEach(k => next.add(k));
+          }
+          return next;
+        });
       }, 600);
       return;
     }
@@ -134,6 +157,21 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
       if (autoWriteOnSuccess && count > 0) {
         onAddToBox(data, true);
       }
+
+      setSelectedKeys(prev => {
+        const next = new Set<string>();
+        // 保留当前已选择且在新数据中依然存在的 key
+        prev.forEach(k => {
+          if (data[k] !== undefined) {
+            next.add(k);
+          }
+        });
+        // 如果是自动写入或手动筛选读取，则将读取出来的所有 key 也自动勾选
+        if (autoWriteOnSuccess || !readAll) {
+          Object.keys(data).forEach(k => next.add(k));
+        }
+        return next;
+      });
     } catch (err) {
       console.error(err);
       showToast('读取失败，请确认页面是否已加载且有权限', 'error');
@@ -142,52 +180,9 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
     }
   };
 
-  // 初始化从 chrome.storage.local / localStorage 中加载并读取数据
+  // 初始化自动读取数据
   useEffect(() => {
-    const init = async () => {
-      let keys = ['authorization', 'authToken'];
-      let autoRead = true;
-      let autoWriteFiltered = false;
-      let autoReadUrl = '';
-      if (isExtension) {
-        try {
-          const result = await chrome.storage.local.get(['sync_filter_keys', 'sync_auto_read', 'sync_auto_write_filtered', 'sync_auto_read_url']);
-          if (result.sync_filter_keys) {
-            keys = result.sync_filter_keys;
-          }
-          if (result.sync_auto_read !== undefined) {
-            autoRead = result.sync_auto_read;
-          }
-          if (result.sync_auto_write_filtered !== undefined) {
-            autoWriteFiltered = result.sync_auto_write_filtered;
-          }
-          if (result.sync_auto_read_url !== undefined) {
-            autoReadUrl = result.sync_auto_read_url;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      } else {
-        const saved = localStorage.getItem('sync_filter_keys');
-        if (saved) {
-          try {
-            keys = JSON.parse(saved);
-          } catch {}
-        }
-        const savedAutoRead = localStorage.getItem('sync_auto_read');
-        if (savedAutoRead !== null) {
-          autoRead = savedAutoRead === 'true';
-        }
-        const savedAutoWriteFiltered = localStorage.getItem('sync_auto_write_filtered');
-        if (savedAutoWriteFiltered !== null) {
-          autoWriteFiltered = savedAutoWriteFiltered === 'true';
-        }
-        const savedAutoReadUrl = localStorage.getItem('sync_auto_read_url');
-        if (savedAutoReadUrl !== null) {
-          autoReadUrl = savedAutoReadUrl;
-        }
-      }
-      setFilterKeys(keys);
+    const triggerInitialRead = async () => {
       // 根据“默认自动读取”设置以及模糊网址规则决定是否触发初次读取
       if (autoRead) {
         let shouldRead = true;
@@ -209,11 +204,11 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
         }
 
         if (shouldRead) {
-          await readData(false, keys, autoWriteFiltered);
+          await readData(false, filterKeys, autoWriteFiltered);
         }
       }
     };
-    init();
+    triggerInitialRead();
   }, []);
 
   // 搜索过滤后的键
@@ -324,7 +319,7 @@ const ReadPanel: React.FC<ReadPanelProps> = ({ onAddToBox, showToast, onNavigate
           </button>
           <button
             className={`btn-icon ${loading ? 'spinning' : ''}`}
-            onClick={() => readData(false)}
+            onClick={() => readData(false, filterKeys, autoWriteFiltered)}
             disabled={loading}
             title="按筛选字段读取"
           >

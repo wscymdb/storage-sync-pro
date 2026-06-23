@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ToggleLeft, ToggleRight, Globe, Shield, Sliders, Plus, X, Info, Sun, Moon, Link } from 'lucide-react';
 import { exportBackupData, mergeAndImportBackup } from '../../utils/backup';
 import './index.less';
@@ -7,16 +7,39 @@ interface SettingsPanelProps {
   showToast: (msg: string, type: 'success' | 'error' | 'warning' | 'info') => void;
   theme: 'dark' | 'light';
   onThemeChange: (theme: 'dark' | 'light') => void;
+
+  autoRead: boolean;
+  setAutoRead: (val: boolean) => void;
+  filterKeys: string[];
+  setFilterKeys: (val: string[]) => void;
+  autoWriteFiltered: boolean;
+  setAutoWriteFiltered: (val: boolean) => void;
+  autoWriteToPage: boolean;
+  setAutoWriteToPage: (val: boolean) => void;
+  autoWriteUrl: string;
+  setAutoWriteUrl: (val: string) => void;
+  autoReadUrl: string;
+  setAutoReadUrl: (val: string) => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onThemeChange }) => {
-  const [autoRead, setAutoRead] = useState(true);
-  const [filterKeys, setFilterKeys] = useState<string[]>(['authorization', 'authToken']);
+const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  showToast,
+  theme,
+  onThemeChange,
+  autoRead,
+  setAutoRead,
+  filterKeys,
+  setFilterKeys,
+  autoWriteFiltered,
+  setAutoWriteFiltered,
+  autoWriteToPage,
+  setAutoWriteToPage,
+  autoWriteUrl,
+  setAutoWriteUrl,
+  autoReadUrl,
+  setAutoReadUrl
+}) => {
   const [newFilterKey, setNewFilterKey] = useState('');
-  const [autoWriteFiltered, setAutoWriteFiltered] = useState(false);
-  const [autoWriteToPage, setAutoWriteToPage] = useState(false);
-  const [autoWriteUrl, setAutoWriteUrl] = useState('');
-  const [autoReadUrl, setAutoReadUrl] = useState('');
 
   // 备份与智能导入恢复状态
   const [showImportModal, setShowImportModal] = useState(false);
@@ -34,68 +57,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
 
   const isExtension = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
 
-  // 初始化加载设置
-  useEffect(() => {
-    if (isExtension) {
-      chrome.storage.local.get(['sync_auto_read', 'sync_filter_keys', 'sync_auto_write_filtered', 'sync_auto_write_to_page', 'sync_auto_write_url', 'sync_auto_read_url'], (result) => {
-        if (result.sync_auto_read !== undefined) {
-          setAutoRead(result.sync_auto_read);
-        }
-        if (result.sync_filter_keys) {
-          setFilterKeys(result.sync_filter_keys);
-        }
-        if (result.sync_auto_write_filtered !== undefined) {
-          setAutoWriteFiltered(result.sync_auto_write_filtered);
-        }
-        if (result.sync_auto_write_to_page !== undefined) {
-          setAutoWriteToPage(result.sync_auto_write_to_page);
-        }
-        if (result.sync_auto_write_url !== undefined) {
-          setAutoWriteUrl(result.sync_auto_write_url);
-        }
-        if (result.sync_auto_read_url !== undefined) {
-          setAutoReadUrl(result.sync_auto_read_url);
-        }
-      });
-    } else {
-      const savedAutoRead = localStorage.getItem('sync_auto_read');
-      if (savedAutoRead !== null) {
-        setAutoRead(savedAutoRead === 'true');
-      }
-      const savedFilterKeys = localStorage.getItem('sync_filter_keys');
-      if (savedFilterKeys) {
-        try {
-          setFilterKeys(JSON.parse(savedFilterKeys));
-        } catch {}
-      }
-      const savedAutoWriteFiltered = localStorage.getItem('sync_auto_write_filtered');
-      if (savedAutoWriteFiltered !== null) {
-        setAutoWriteFiltered(savedAutoWriteFiltered === 'true');
-      }
-      const savedAutoWrite = localStorage.getItem('sync_auto_write_to_page');
-      if (savedAutoWrite !== null) {
-        setAutoWriteToPage(savedAutoWrite === 'true');
-      }
-      const savedAutoWriteUrl = localStorage.getItem('sync_auto_write_url');
-      if (savedAutoWriteUrl !== null) {
-        setAutoWriteUrl(savedAutoWriteUrl);
-      }
-      const savedAutoReadUrl = localStorage.getItem('sync_auto_read_url');
-      if (savedAutoReadUrl !== null) {
-        setAutoReadUrl(savedAutoReadUrl);
-      }
-    }
-  }, []);
-
   // 保存是否自动读取
   const handleToggleAutoRead = () => {
     const nextVal = !autoRead;
     setAutoRead(nextVal);
-    if (isExtension) {
-      chrome.storage.local.set({ sync_auto_read: nextVal });
-    } else {
-      localStorage.setItem('sync_auto_read', String(nextVal));
-    }
     showToast(nextVal ? '已开启默认自动读取' : '已配置为默认不读取，需手动刷新', 'success');
   };
 
@@ -107,11 +72,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
     }
     const nextVal = !autoWriteFiltered;
     setAutoWriteFiltered(nextVal);
-    if (isExtension) {
-      chrome.storage.local.set({ sync_auto_write_filtered: nextVal });
-    } else {
-      localStorage.setItem('sync_auto_write_filtered', String(nextVal));
-    }
     showToast(nextVal ? '已开启筛选字段默认写入缓存箱' : '已关闭默认写入缓存箱', 'success');
   };
 
@@ -119,11 +79,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   const handleToggleAutoWriteToPage = () => {
     const nextVal = !autoWriteToPage;
     setAutoWriteToPage(nextVal);
-    if (isExtension) {
-      chrome.storage.local.set({ sync_auto_write_to_page: nextVal });
-    } else {
-      localStorage.setItem('sync_auto_write_to_page', String(nextVal));
-    }
     if (nextVal) {
       showToast('已开启自动写入，请确保填写匹配网址！', 'success');
     } else {
@@ -134,21 +89,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   // 保存匹配网址
   const handleAutoWriteUrlChange = (val: string) => {
     setAutoWriteUrl(val);
-    if (isExtension) {
-      chrome.storage.local.set({ sync_auto_write_url: val });
-    } else {
-      localStorage.setItem('sync_auto_write_url', val);
-    }
   };
 
   // 保存读取匹配网址
   const handleAutoReadUrlChange = (val: string) => {
     setAutoReadUrl(val);
-    if (isExtension) {
-      chrome.storage.local.set({ sync_auto_read_url: val });
-    } else {
-      localStorage.setItem('sync_auto_read_url', val);
-    }
   };
 
   // 添加筛选键
@@ -162,11 +107,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
     }
     const updated = [...filterKeys, key];
     setFilterKeys(updated);
-    if (isExtension) {
-      chrome.storage.local.set({ sync_filter_keys: updated });
-    } else {
-      localStorage.setItem('sync_filter_keys', JSON.stringify(updated));
-    }
     setNewFilterKey('');
     showToast(`已添加筛选字段: ${key}`, 'success');
   };
@@ -175,11 +115,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ showToast, theme, onTheme
   const handleRemoveFilterKey = (keyToRemove: string) => {
     const updated = filterKeys.filter(k => k !== keyToRemove);
     setFilterKeys(updated);
-    if (isExtension) {
-      chrome.storage.local.set({ sync_filter_keys: updated });
-    } else {
-      localStorage.setItem('sync_filter_keys', JSON.stringify(updated));
-    }
     showToast(`已移除筛选字段: ${keyToRemove}`, 'info');
   };
 
