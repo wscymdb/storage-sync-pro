@@ -15,7 +15,8 @@ const BACKUP_STORAGE_KEYS = [
   'sync_auto_write_url',
   'sync_read_filter_rules',
   'sync_read_filters',
-  'sync_theme'
+  'sync_theme',
+  'sync_auto_promote_account'
 ];
 
 /**
@@ -172,7 +173,8 @@ export const mergeAndImportBackup = async (
         'sync_auto_write_filtered',
         'sync_auto_write_to_page',
         'sync_auto_write_url',
-        'sync_theme'
+        'sync_theme',
+        'sync_auto_promote_account'
       ];
       settingKeys.forEach(key => {
         if (pendingBackupData[key] !== undefined) {

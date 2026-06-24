@@ -20,6 +20,8 @@ interface SettingsPanelProps {
   setAutoWriteUrl: (val: string) => void;
   autoReadUrl: string;
   setAutoReadUrl: (val: string) => void;
+  autoPromoteAccount: boolean;
+  setAutoPromoteAccount: (val: boolean) => void;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -37,7 +39,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   autoWriteUrl,
   setAutoWriteUrl,
   autoReadUrl,
-  setAutoReadUrl
+  setAutoReadUrl,
+  autoPromoteAccount,
+  setAutoPromoteAccount
 }) => {
   const [newFilterKey, setNewFilterKey] = useState('');
 
@@ -94,6 +98,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   // 保存读取匹配网址
   const handleAutoReadUrlChange = (val: string) => {
     setAutoReadUrl(val);
+  };
+
+  // 保存是否复制自动置顶
+  const handleToggleAutoPromoteAccount = () => {
+    const nextVal = !autoPromoteAccount;
+    setAutoPromoteAccount(nextVal);
+    showToast(nextVal ? '已开启复制时自动置顶账号' : '已关闭复制自动置顶', 'success');
   };
 
   // 添加筛选键
@@ -342,6 +353,28 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             )}
           </div>
         )}
+      </div>
+
+      {/* 模块：账号簿首选项 */}
+      <div className="settings-section">
+        <div className="section-title">
+          <Sliders size={14} className="icon-title" />
+          <span>账号簿首选项</span>
+        </div>
+        
+        <div className="settings-card switch-wrapper" onClick={handleToggleAutoPromoteAccount}>
+          <div className="setting-info">
+            <span className="setting-label">复制时自动置顶</span>
+            <span className="setting-desc">复制账号或密码后，自动将该项置于第一条</span>
+          </div>
+          <button type="button" className="btn-toggle-switch">
+            {autoPromoteAccount ? (
+              <ToggleRight size={28} className="switch-icon active" />
+            ) : (
+              <ToggleLeft size={28} className="switch-icon" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* 模块二：字段筛选规则 */}

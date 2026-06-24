@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [autoReadUrl, setAutoReadUrl] = useState('');
   const [autoWriteToPage, setAutoWriteToPage] = useState(false);
   const [autoWriteUrl, setAutoWriteUrl] = useState('');
+  const [autoPromoteAccount, setAutoPromoteAccount] = useState(true);
 
   const isExtension =
     typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
@@ -44,7 +45,8 @@ const App: React.FC = () => {
       "sync_auto_read",
       "sync_filter_keys",
       "sync_auto_write_filtered",
-      "sync_auto_read_url"
+      "sync_auto_read_url",
+      "sync_auto_promote_account"
     ];
     if (isExtension) {
       chrome.storage.local.get(keysToGet, (result) => {
@@ -74,6 +76,9 @@ const App: React.FC = () => {
         }
         if (result.sync_auto_read_url !== undefined) {
           setAutoReadUrl(result.sync_auto_read_url);
+        }
+        if (result.sync_auto_promote_account !== undefined) {
+          setAutoPromoteAccount(result.sync_auto_promote_account);
         }
 
         // 触发加载时自动写入检查 (暂存箱无数据时不写入，不与设置冲突)
@@ -128,6 +133,10 @@ const App: React.FC = () => {
       const savedAutoReadUrl = localStorage.getItem("sync_auto_read_url");
       if (savedAutoReadUrl !== null) {
         setAutoReadUrl(savedAutoReadUrl);
+      }
+      const savedAutoPromoteAccount = localStorage.getItem("sync_auto_promote_account");
+      if (savedAutoPromoteAccount !== null) {
+        setAutoPromoteAccount(savedAutoPromoteAccount === "true");
       }
       
       // 触发自动写入 Mock 检查
@@ -212,6 +221,15 @@ const App: React.FC = () => {
       chrome.storage.local.set({ sync_auto_write_url: val });
     } else {
       localStorage.setItem("sync_auto_write_url", val);
+    }
+  };
+
+  const handleAutoPromoteAccountChange = (val: boolean) => {
+    setAutoPromoteAccount(val);
+    if (isExtension) {
+      chrome.storage.local.set({ sync_auto_promote_account: val });
+    } else {
+      localStorage.setItem("sync_auto_promote_account", String(val));
     }
   };
 
@@ -408,7 +426,12 @@ const App: React.FC = () => {
               showToast={showToast}
             />
           )}
-          {activeTab === "account" && <AccountPanel showToast={showToast} />}
+          {activeTab === "account" && (
+            <AccountPanel
+              showToast={showToast}
+              autoPromoteAccount={autoPromoteAccount}
+            />
+          )}
         </div>
       </main>
 
@@ -446,6 +469,8 @@ const App: React.FC = () => {
             setAutoWriteUrl={handleAutoWriteUrlChange}
             autoReadUrl={autoReadUrl}
             setAutoReadUrl={handleAutoReadUrlChange}
+            autoPromoteAccount={autoPromoteAccount}
+            setAutoPromoteAccount={handleAutoPromoteAccountChange}
           />
         </div>
       </div>

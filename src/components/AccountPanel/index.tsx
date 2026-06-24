@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Trash2,
@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Edit2,
   FileText,
+  GripVertical,
 } from "lucide-react";
 import "./index.less";
 
@@ -28,11 +29,18 @@ interface AccountPanelProps {
     msg: string,
     type: "success" | "error" | "warning" | "info",
   ) => void;
+  autoPromoteAccount: boolean;
 }
 
-const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
+const AccountPanel: React.FC<AccountPanelProps> = ({ showToast, autoPromoteAccount }) => {
   const [items, setItems] = useState<AccountItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+
+  // 拖拽排序状态
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // 新增账号表单状态
   const [url, setUrl] = useState("");
@@ -320,11 +328,70 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
     handleOpenUrl(item.url, e);
   };
 
+  // 拖拽相关事件处理器
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+
+    // 拖动到边缘时自动滚动
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const rect = container.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+      
+      const scrollThreshold = 40; // 触发滚动边缘距离
+      const scrollSpeed = 6;      // 滚动速度
+
+      if (relativeY < scrollThreshold) {
+        container.scrollTop -= scrollSpeed;
+      } else if (rect.bottom - e.clientY < scrollThreshold) {
+        container.scrollTop += scrollSpeed;
+      }
+    }
+
+    if (draggedIndex !== index && dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      handleDragEnd();
+      return;
+    }
+
+    const updated = [...items];
+    const [draggedItem] = updated.splice(draggedIndex, 1);
+    updated.splice(targetIndex, 0, draggedItem);
+    
+    saveItems(updated);
+    handleDragEnd();
+    showToast("排序已保存", "success");
+  };
+
   // 一键复制
-  const handleCopy = (text: string, label: string, e: React.MouseEvent) => {
+  const handleCopy = (text: string, label: string, e: React.MouseEvent, item: AccountItem) => {
     e.stopPropagation();
     navigator.clipboard.writeText(text);
     showToast(`${label}已复制`, "success");
+
+    if (autoPromoteAccount) {
+      const remaining = items.filter((i) => i.id !== item.id);
+      const updated = [item, ...remaining];
+      saveItems(updated);
+    }
   };
 
   // 密码显示/隐藏切换
@@ -423,7 +490,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
       )}
 
       {/* 账号展示卡片列表 */}
-      <div className="list-scroll-area">
+      <div className="list-scroll-area" ref={scrollContainerRef}>
         {items.length === 0 ? (
           <div className="empty-state">
             <HelpCircle size={26} style={{ color: "var(--text-muted)" }} />
@@ -432,16 +499,23 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
           </div>
         ) : (
           <div className="account-cards-list">
-            {items.map((item) => {
+            {items.map((item, index) => {
               const isPasswordVisible = visiblePasswords.has(item.id);
               const isEditing = editingId === item.id;
               const isDeleting = deletingId === item.id;
+              const isDragged = draggedIndex === index;
+              const isDragOver = dragOverIndex === index;
 
               return (
                 <div
                   key={item.id}
-                  className={`account-card ${isEditing ? "editing" : ""} ${isDeleting ? "deleting" : ""}`}
+                  className={`account-card ${isEditing ? "editing" : ""} ${isDeleting ? "deleting" : ""} ${isDragged ? "dragged" : ""} ${isDragOver ? "drag-over" : ""}`}
                   onClick={(e) => handleCardClick(item, e)}
+                  draggable={!isEditing && !isDeleting}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onDrop={(e) => handleDrop(e, index)}
                 >
                   {isDeleting && (
                     <div className="card-delete-overlay" onClick={(e) => e.stopPropagation()}>
@@ -535,6 +609,13 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
                           className="url-container"
                           title="点击跳转打开新窗口"
                         >
+                          <div 
+                            className="drag-handle" 
+                            title="按住拖拽排序"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <GripVertical size={13} className="grip-icon" />
+                          </div>
                           <Globe size={14} className="globe" />
                           <span className="url-text">
                             {getDisplayUrl(item.url)}
@@ -587,7 +668,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
                             <button
                               className="btn-copy"
                               onClick={(e) =>
-                                handleCopy(item.account, "账号", e)
+                                handleCopy(item.account, "账号", e, item)
                               }
                               title="复制账号"
                             >
@@ -629,7 +710,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ showToast }) => {
                               <button
                                 className="btn-copy"
                                 onClick={(e) =>
-                                  handleCopy(item.password || "", "密码", e)
+                                  handleCopy(item.password || "", "密码", e, item)
                                 }
                                 title="复制密码"
                                 disabled={!item.password}
