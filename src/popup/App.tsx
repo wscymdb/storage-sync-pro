@@ -87,6 +87,18 @@ const App: React.FC = () => {
           result.sync_auto_write_to_page || false,
           result.sync_auto_write_url || ""
         );
+
+        // 如果当前 Tab 不是 read，则在后台进行自动读取和自动同步到缓存箱检查
+        const initialTab = result.sync_active_tab || "read";
+        if (initialTab !== "read") {
+          handleAutoReadAndSyncCheck(
+            result.sync_box_items || {},
+            result.sync_auto_read !== undefined ? result.sync_auto_read : true,
+            result.sync_auto_read_url || "",
+            result.sync_filter_keys || ['authorization', 'authToken'],
+            result.sync_auto_write_filtered || false
+          );
+        }
         setSettingsLoaded(true);
       });
     } else {
@@ -141,6 +153,27 @@ const App: React.FC = () => {
       
       // 触发自动写入 Mock 检查
       handleAutoWriteCheck(loadedBox, savedAutoWrite, savedAutoWriteUrl);
+
+      // 如果当前 Tab 不是 read，则在后台进行自动读取和自动同步到缓存箱检查
+      const initialTab = localTab || "read";
+      if (initialTab !== "read") {
+        const autoReadVal = savedAutoRead !== null ? savedAutoRead === "true" : true;
+        let filterKeysList = ['authorization', 'authToken'];
+        if (savedFilterKeys) {
+          try {
+            filterKeysList = JSON.parse(savedFilterKeys);
+          } catch {}
+        }
+        const autoWriteFilteredVal = savedAutoWriteFiltered !== null ? savedAutoWriteFiltered === "true" : false;
+
+        handleAutoReadAndSyncCheck(
+          loadedBox,
+          autoReadVal,
+          savedAutoReadUrl || "",
+          filterKeysList,
+          autoWriteFilteredVal
+        );
+      }
       setSettingsLoaded(true);
     }
   }, []);
@@ -293,6 +326,118 @@ const App: React.FC = () => {
           `[自动写入] 已自动写入暂存箱的 ${Object.keys(items).length} 个字段 (开发预览模式)`,
           "success"
         );
+      }
+    }
+  };
+
+  // 检查并执行自动读取与同步至缓存箱逻辑
+  const handleAutoReadAndSyncCheck = async (
+    currentBoxItems: Record<string, string>,
+    autoReadEnabled: boolean,
+    autoReadUrlPattern: string,
+    filterKeysList: string[],
+    autoWriteFilteredEnabled: boolean
+  ) => {
+    if (!autoReadEnabled) return;
+
+    if (isExtension) {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab || !tab.id || !tab.url) return;
+
+        const currentUrl = tab.url;
+
+        // 检查网址匹配
+        let shouldRead = true;
+        if (autoReadUrlPattern.trim()) {
+          shouldRead = matchUrlPattern(currentUrl, autoReadUrlPattern);
+        }
+
+        if (shouldRead) {
+          // 读取网页 localStorage
+          let results;
+          if (filterKeysList.length > 0) {
+            results = await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: (keysToRead) => {
+                const data: Record<string, string> = {};
+                keysToRead.forEach(key => {
+                  const val = localStorage.getItem(key);
+                  if (val !== null) {
+                    data[key] = val;
+                  }
+                });
+                return data;
+              },
+              args: [filterKeysList]
+            });
+          } else {
+            results = await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: () => {
+                const data: Record<string, string> = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                  const key = localStorage.key(i);
+                  if (key) {
+                    data[key] = localStorage.getItem(key) || '';
+                  }
+                }
+                return data;
+              }
+            });
+          }
+
+          const data = results[0]?.result || {};
+          const count = Object.keys(data).length;
+
+          // 如果开启了自动写入缓存箱且有数据，则存入缓存箱
+          if (autoWriteFilteredEnabled && count > 0) {
+            const updated = { ...currentBoxItems, ...data };
+            setBoxItems(updated);
+            chrome.storage.local.set({ sync_box_items: updated });
+            showToast(
+              `[自动同步] 已默认将读取的 ${count} 个筛选字段写入缓存箱`,
+              "success"
+            );
+          }
+        }
+      } catch (err) {
+        console.error("自动读取及同步失败:", err);
+      }
+    } else {
+      // 浏览器开发预览模式 Mock
+      const currentUrl = window.location.href;
+      let shouldRead = true;
+      if (autoReadUrlPattern.trim()) {
+        shouldRead = matchUrlPattern(currentUrl, autoReadUrlPattern);
+      }
+      if (shouldRead) {
+        const mockFullData = {
+          'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjM0NTYiLCJ1c2VybmFtZSI6ImFudGlncmF2aXR5IiwiZXhwIjoxNjg1MDk3NjAwfQ.signature',
+          'theme': 'dark',
+          'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjM0NTYiLCJ1c2VybmFtZSI6ImFudGlncmF2aXR5IiwiZXhwIjoxNjg1MDk3NjAwfQ.signature',
+          'authToken': 'mock-authToken-value-999'
+        };
+        let filteredData: Record<string, string> = {};
+        if (filterKeysList.length > 0) {
+          filterKeysList.forEach(k => {
+            if (mockFullData[k as keyof typeof mockFullData] !== undefined) {
+              filteredData[k] = mockFullData[k as keyof typeof mockFullData];
+            }
+          });
+        } else {
+          filteredData = mockFullData;
+        }
+        const count = Object.keys(filteredData).length;
+        if (autoWriteFilteredEnabled && count > 0) {
+          const updated = { ...currentBoxItems, ...filteredData };
+          setBoxItems(updated);
+          localStorage.setItem("sync_box_items", JSON.stringify(updated));
+          showToast(
+            `[自动同步] 已默认将读取的 ${count} 个筛选字段写入缓存箱 (开发预览模式)`,
+            "success"
+          );
+        }
       }
     }
   };
